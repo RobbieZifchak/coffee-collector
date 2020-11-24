@@ -92,35 +92,15 @@ def add_business_ids(business_ids, review_data):
     return join_dict   
 
 def parse_reviews(review_dict):
-    parsed_reviews = [] 
+    parsed_reviews = []
     for x in review_dict:
-        try:
-            if len(x['reviews']) == 3:
-                tup = (x['business_id'], x['reviews'][0]['id'], x['reviews'][0]['time_created'],
-                        x['reviews'][0]['rating'],x['reviews'][0]['user']['id'],
-                        x['reviews'][0]['user']['name'], x['reviews'][0]['text'], 
-
-                        x['business_id'], x['reviews'][1]['id'], x['reviews'][1]['time_created'],
-                        x['reviews'][1]['rating'], x['reviews'][1]['user']['id'],
-                        x['reviews'][1]['user']['name'], x['reviews'][1]['text'],
-
-                        x['business_id'], x['reviews'][2]['id'], x['reviews'][2]['time_created'],
-                        x['reviews'][2]['rating'], x['reviews'][2]['user']['id'],
-                        x['reviews'][2]['user']['name'], x['reviews'][2]['text'])
-            elif len(x['reviews']) == 2:
-                tup = (x['business_id'], x['reviews'][0]['id'], x['reviews'][0]['time_created'],
-                        x['reviews'][0]['rating'],x['reviews'][0]['user']['id'],
-                        x['reviews'][0]['user']['name'], x['reviews'][0]['text'], 
-
-                        x['business_id'], x['reviews'][1]['id'], x['reviews'][1]['time_created'],
-                        x['reviews'][1]['rating'], x['reviews'][1]['user']['id'],
-                        x['reviews'][1]['user']['name'], x['reviews'][1]['text'])
-            else:
-                tup = (x['business_id'], x['reviews'][0]['id'], x['reviews'][0]['time_created'],
-                        x['reviews'][0]['rating'],x['reviews'][0]['user']['id'],
-                        x['reviews'][0]['user']['name'], x['reviews'][0]['text'])          
-                      
-            parsed_reviews.append(tup)
-        except Exception as e:
-            print(e)
+        for i in range(len(x['reviews'])):
+            try:
+                tup = (x['business_id'], x['reviews'][i]['id'], x['reviews'][i]['time_created'],
+                        x['reviews'][i]['rating'],x['reviews'][i]['user']['id'],
+                        x['reviews'][i]['user']['name'], x['reviews'][i]['text']) 
+                parsed_reviews.append(tup)
+                i+=1
+            except Exception as e:
+                print(e)
     return parsed_reviews
