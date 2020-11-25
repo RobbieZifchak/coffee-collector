@@ -88,19 +88,91 @@ def add_business_ids(business_ids, review_data):
         join = (biz_ids[i], review_data[i])
         id_plus_reviews.append(list(join))
         
-    join_dict = list(map(lambda x: {'business_id': x[0], 'reviews' : x[1]['reviews']}, id_plus_reviews))
+    join_dict = list(map(lambda x: {'business_id': x[0], 'reviews' : x[1]}, id_plus_reviews))
     return join_dict   
 
-def parse_reviews(review_dict):
+def parse_reviews(reviews_with_business_id):
     parsed_reviews = []
-    for x in review_dict:
-        for i in range(len(x['reviews'])):
+    
+    for x in reviews_with_business_id:
+
+        if 'error' in x['reviews'].keys():
+            tup = (x['business_id'], x['reviews']['error']['code'])
+            parsed_reviews.append(tup)
+        else:
             try:
-                tup = (x['business_id'], x['reviews'][i]['id'], x['reviews'][i]['time_created'],
-                        x['reviews'][i]['rating'],x['reviews'][i]['user']['id'],
-                        x['reviews'][i]['user']['name'], x['reviews'][i]['text']) 
-                parsed_reviews.append(tup)
-                i+=1
+                for i in range(len(x['reviews'])):
+                    tup = (x['business_id'], x['reviews']['reviews'][i]['id'],
+                           x['reviews']['reviews'][i]['time_created'],
+                           x['reviews']['reviews'][i]['rating'],
+                           x['reviews']['reviews'][i]['user']['id'],
+                           x['reviews']['reviews'][i]['user']['name'],
+                           x['reviews']['reviews'][i]['text'])
+
+                    parsed_reviews.append(tup)
+                    i+1
             except Exception as e:
-                print(e)
+                print(e,': missing reviews')
     return parsed_reviews
+            
+
+def cafes_insert(c, cnx, cafe_details):
+    
+    c.executemany('''INSERT INTO coffee.cafes
+                    (ID, NAME, RATING, PRICE, ADDRESS, PHONE, REVIEW_COUNT, CATEGORIES)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);''', cafe_details)
+    cnx.commit()
+
+def review_insert(c, cnx, reviews):
+    
+    c.executemany('''INSERT INTO coffee.reviews (CAFE_ID, REVIEW_ID, REVIEW_DATE, RATING, USER_ID, USER_NAME, REVIEW)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)''', reviews)
+    cnx.commit()    
+
+
+# c.execute('''USE coffee''')
+
+c.execute('''CREATE TABLE cafes(
+
+                ID VARCHAR(100) PRIMARY KEY,
+                NAME VARCHAR(100),
+                RATING FLOAT,
+                PRICE INT,
+                ADDRESS VARCHAR(160),
+                PHONE VARCHAR(100),
+                REVIEW_COUNT VARCHAR(100),
+                CATEGORIES VARCHAR(200));'''
+         )
+
+c.execute(                     
+            '''CREATE TABLE reviews(
+            
+                CAFE_ID VARCHAR(100),
+                REVIEW_ID VARCHAR(100) PRIMARY KEY,
+                REVIEW_DATE DATETIME,
+                RATING FLOAT,
+                USER_ID VARCHAR(100),
+                USER_NAME VARCHAR(100),
+                REVIEW VARCHAR(1000),
+                CONSTRAINT FOREIGN KEY (CAFE_ID) REFERENCES cafes(ID)
+                                    ); 
+                
+                                   '''
+         )
+
+count = 0 
+#4800 cafes total. Yelp restricts business endpoint daily pull to 1000, throwing error if limit is reached
+while count < 1000:
+    url_params['offset'] = count
+    business_data = business_search(url, headers = headers, params = url_params)
+    parsed_businesses = parse_business(business_data)
+    review_urls = get_review_url(parsed_businesses)
+    review_raw = review_call(review_urls, headers)
+    business_ids = get_business_ids(parsed_businesses)
+    reviews_with_business_id = add_business_ids(business_ids, review_raw)
+    parsed_reviews = parse_reviews(reviews_with_business_id)
+    cafes_insert(c, cnx, parsed_businesses)
+    review_insert(c, cnx, parsed_reviews)
+    count += 50
+    if count > 1000:
+        break
