@@ -1,0 +1,3 @@
+client_id = 'd31wiC8swpcod_WEbvT7ew'
+
+key='Fi9YM7w1buyiE4HRcOjM6ocNL09YAUnALRfrk6TDVAlJfMu1GQW0Dr_H79RRoSDP0T659WFccMzlNVWgq1qqL3w93NaG_ebGuW3gKsRek99el_RkrXl-wxBG9jbpXXYx'
